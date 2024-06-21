@@ -86,11 +86,12 @@ HIST_STAMPS="dd.mm.yyyy"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
 
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
+export PATH="/opt/homebrew/bin:$PATH"
 export working_dir="/Users/parm/Desktop/dev/onnx"
 export MLIR_DIR="$working_dir/llvm-project/build/lib/cmake/mlir"
 
@@ -105,5 +106,3 @@ alias vim="~/nvim-macos/bin/nvim"
 alias ll="ls -la"
 alias gs="git status"
 alias gl="git log --oneline --graph --all"
-
-source opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
