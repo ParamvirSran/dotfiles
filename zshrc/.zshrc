@@ -1,7 +1,4 @@
-export TERM=alacritty
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 export CONDA_PROMPT_MODIFIER=""
-
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/Users/parm/anaconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
@@ -89,22 +86,13 @@ HIST_STAMPS="dd.mm.yyyy"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git direnv)
+plugins=(git)
 
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
-export MANPATH="/usr/local/man:$MANPATH"
-export ARCHFLAGS="-arch x86_64"
-export DOCKER_DEFAULT_PLATFORM=linux/amd64
 export working_dir="/Users/parm/Desktop/dev/onnx"
 export MLIR_DIR="$working_dir/llvm-project/build/lib/cmake/mlir"
-export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-export CC="/usr/bin/gcc"
-export CXX="/usr/bin/g++"
-export LANG=en_US.UTF-8
-export EDITOR='vim'
 
 # Set personal aliases, overriding those provided by oh-my-zsh libs,
 # plugins, and themes. Aliases can be placed here, though oh-my-zsh
@@ -113,13 +101,9 @@ export EDITOR='vim'
 #
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-alias gaul="ssh psran2@compute.gaul.csd.uwo.ca"
 alias vim="~/nvim-macos/bin/nvim"
 alias ll="ls -la"
 alias gs="git status"
 alias gl="git log --oneline --graph --all"
 
-export HOMEBREW_PREFIX="/opt/homebrew"
-source $HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-export PATH="/opt/homebrew/opt/llvm@17/bin:$PATH"
-
+source opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
