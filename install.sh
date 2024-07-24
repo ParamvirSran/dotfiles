@@ -1,2 +1,2 @@
 #!/bin/bash
-stow zshrc tmux nvim alacritty git
+stow zshrc tmux nvim alacritty git kitty
