@@ -36,5 +36,6 @@ alias gl="git log --oneline --graph --all"
 alias cl='clear'
 alias path='echo -e ${PATH//:/\\n}'
 alias ports='netstat -tulanp'
+alias python='python3'
 
 prompt_context(){}
