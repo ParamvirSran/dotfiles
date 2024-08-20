@@ -37,5 +37,6 @@ alias cl='clear'
 alias path='echo -e ${PATH//:/\\n}'
 alias ports='netstat -tulanp'
 alias python='python3'
+alias py = 'python3'
 
 prompt_context(){}
