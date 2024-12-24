@@ -20,7 +20,6 @@ COMPLETION_WAITING_DOTS="true"
 DISABLE_UNTRACKED_FILES_DIRTY="true"
 HIST_STAMPS="dd.mm.yyyy"
 plugins=(git zsh-autosuggestions zsh-syntax-highlighting)
-
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
@@ -38,5 +37,5 @@ alias path='echo -e ${PATH//:/\\n}'
 alias ports='netstat -tulanp'
 alias python='python3'
 alias py='python3'
-
+bindkey '^ ' autosuggest-accept
 prompt_context(){}
