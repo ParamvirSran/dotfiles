@@ -24,11 +24,8 @@ source $ZSH/oh-my-zsh.sh
 
 # User configuration
 export PATH="/Users/parm/go/bin:/opt/homebrew/bin:$PATH"
-export working_dir="/Users/parm/Desktop/dev/onnx"
-export MLIR_DIR="$working_dir/llvm-project/build/lib/cmake/mlir"
 
-alias vim="~/nvim-macos-arm64/bin/nvim"
-alias nvim="~/nvim-macos-arm64/bin/nvim"
+alias vim="nvim"
 alias ll="ls -la"
 alias gs="git status"
 alias gl="git log --oneline --graph --all"
