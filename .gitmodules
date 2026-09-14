@@ -1,5 +1,5 @@
 [submodule "nvim/.config/nvim"]
 	path = nvim/.config/nvim
 	url = git@github.com:ParamvirSran/kickstart.nvim.git
-	branch = config
+	branch = master
 
