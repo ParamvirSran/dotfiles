@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+#
+# dotfiles - Management utility for personal dotfiles and kickstart.nvim
+#
+
+set -euo pipefail
+
+# Resolve real path of script following symlinks
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+DOTFILES_DIR="$(cd -P "$(dirname "$SOURCE")/../../.." >/dev/null 2>&1 && pwd)"
+if [[ ! -d "$DOTFILES_DIR/nvim" && -d "$HOME/dotfiles" ]]; then
+  DOTFILES_DIR="$HOME/dotfiles"
+fi
+NVIM_DIR="$DOTFILES_DIR/nvim/.config/nvim"
+
+# Colors for output
+BOLD="\033[1m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+RED="\033[0;31m"
+RESET="\033[0m"
+
+log_info()  { echo -e "${BLUE}${BOLD}==>${RESET} ${BOLD}$*${RESET}"; }
+log_ok()    { echo -e "${GREEN}${BOLD}✓${RESET} $*"; }
+log_warn()  { echo -e "${YELLOW}${BOLD}!${RESET} $*"; }
+log_error() { echo -e "${RED}${BOLD}✗${RESET} $*"; }
+
+usage() {
+  cat << 'HELP'
+dotfiles - Operations manager for dotfiles and Neovim kickstart
+
+USAGE:
+  dotfiles <command> [arguments]
+
+COMMANDS:
+  sync, pull            Pull latest changes from GitHub, update submodules, and restow
+  push [commit_msg]     Commit and push changes in both kickstart.nvim and dotfiles
+  stow                  Restow all configuration packages to $HOME
+  status                Show status of dotfiles, kickstart.nvim submodule, and toolchain
+  rebase-upstream       Rebase kickstart.nvim fork onto upstream nvim-lua/kickstart.nvim
+  help, -h, --help      Show this help message
+
+EXAMPLES:
+  dotfiles sync
+  dotfiles push "Update tmux and zsh keybindings"
+  dotfiles status
+HELP
+}
+
+cmd_stow() {
+  log_info "Restowing dotfiles packages from $DOTFILES_DIR..."
+  cd "$DOTFILES_DIR"
+
+  # Find all directories that represent stow packages
+  for pkg in */; do
+    pkg="${pkg%/}"
+    # Ignore git or hidden dirs
+    if [[ "$pkg" == .* ]]; then
+      continue
+    fi
+    stow -R "$pkg" 2>/dev/null || stow "$pkg"
+  done
+  log_ok "All packages stowed successfully."
+}
+
+cmd_sync() {
+  log_info "Syncing dotfiles repository..."
+  cd "$DOTFILES_DIR"
+  git pull --ff-only origin main || {
+    log_warn "Fast-forward pull failed. Fetching and rebasing..."
+    git pull --rebase origin main
+  }
+
+  log_info "Updating git submodules (kickstart.nvim)..."
+  git submodule update --init --recursive
+
+  cmd_stow
+
+  # Run local hook if defined on this machine (e.g. Piper configs on Cloudtop)
+  if [[ -x "$HOME/.local/bin/dotfiles-local" ]]; then
+    log_info "Executing local machine hook ($HOME/.local/bin/dotfiles-local)..."
+    "$HOME/.local/bin/dotfiles-local"
+  fi
+
+  log_ok "Dotfiles synchronization complete."
+}
+
+cmd_push() {
+  local msg="${1:-}"
+
+  # 1. Check and commit kickstart.nvim submodule
+  if [[ -d "$NVIM_DIR/.git" ]]; then
+    cd "$NVIM_DIR"
+    if [[ -n "$(git status --porcelain)" ]]; then
+      log_info "Detected uncommitted changes in kickstart.nvim submodule."
+      if [[ -z "$msg" ]]; then
+        read -r -p "Enter commit message for kickstart.nvim: " msg
+      fi
+      if [[ -z "$msg" ]]; then
+        msg="Update Neovim configuration"
+      fi
+      git add -A
+      git commit -m "$msg"
+      log_info "Pushing kickstart.nvim to origin/config and syncing origin/master..."
+      git push origin config
+      local curr_branch
+      curr_branch="$(git branch --show-current)"
+      git checkout master
+      git merge config
+      git push origin master
+      git checkout "$curr_branch"
+      log_ok "Pushed kickstart.nvim changes."
+    else
+      log_info "kickstart.nvim working tree clean."
+    fi
+  fi
+
+  # 2. Check and commit parent dotfiles repo
+  cd "$DOTFILES_DIR"
+  if [[ -n "$(git status --porcelain)" ]]; then
+    if [[ -z "$msg" ]]; then
+      read -r -p "Enter commit message for dotfiles: " msg
+    fi
+    if [[ -z "$msg" ]]; then
+      msg="Update dotfiles configuration"
+    fi
+    git add -A
+    git commit -m "$msg"
+    log_info "Pushing dotfiles to origin/main..."
+    git push origin main
+    log_ok "Pushed dotfiles changes."
+  else
+    log_info "dotfiles working tree clean. Nothing to push."
+  fi
+}
+
+cmd_rebase_upstream() {
+  log_info "Rebasing kickstart.nvim on upstream master..."
+  cd "$NVIM_DIR"
+
+  if ! git remote | grep -q '^upstream$'; then
+    log_info "Adding upstream remote (https://github.com/nvim-lua/kickstart.nvim.git)..."
+    git remote add upstream https://github.com/nvim-lua/kickstart.nvim.git
+  fi
+
+  git fetch upstream
+  local curr_branch
+  curr_branch="$(git branch --show-current)"
+
+  git checkout config
+  git rebase upstream/master
+  log_info "Pushing rebased config branch to origin..."
+  git push origin config --force-with-lease
+
+  git checkout master
+  git merge config
+  git push origin master --force-with-lease
+  git checkout "$curr_branch"
+
+  # Update parent pointer
+  cd "$DOTFILES_DIR"
+  git add nvim/.config/nvim
+  git commit -m "Rebase kickstart.nvim on upstream master"
+  git push origin main
+  log_ok "Rebase on upstream complete and pushed."
+}
+
+cmd_status() {
+  log_info "Checking toolchain and repository status..."
+  echo ""
+  echo -e "${BOLD}Neovim:${RESET}"
+  local nvim_bin
+  nvim_bin="$(which nvim 2>/dev/null || echo "not found")"
+  echo "  Binary:  $nvim_bin"
+  if [[ "$nvim_bin" != "not found" ]]; then
+    echo "  Version: $(nvim --version | head -n 1)"
+  fi
+
+  echo ""
+  echo -e "${BOLD}Tmux & TPM:${RESET}"
+  local tmux_bin
+  tmux_bin="$(which tmux 2>/dev/null || echo "not found")"
+  echo "  Binary:  $tmux_bin"
+  if [[ -d "$HOME/.tmux/plugins/tpm" ]]; then
+    echo "  TPM:     Installed ($HOME/.tmux/plugins/tpm)"
+  else
+    echo "  TPM:     Not installed"
+  fi
+
+  echo ""
+  echo -e "${BOLD}Kickstart Submodule ($NVIM_DIR):${RESET}"
+  cd "$NVIM_DIR"
+  echo "  Branch:  $(git branch --show-current)"
+  echo "  Commit:  $(git log -1 --oneline)"
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo -e "  Status:  ${YELLOW}Uncommitted changes present${RESET}"
+    git status -s
+  else
+    echo -e "  Status:  ${GREEN}Clean${RESET}"
+  fi
+
+  echo ""
+  echo -e "${BOLD}Dotfiles Repo ($DOTFILES_DIR):${RESET}"
+  cd "$DOTFILES_DIR"
+  echo "  Branch:  $(git branch --show-current)"
+  echo "  Commit:  $(git log -1 --oneline)"
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo -e "  Status:  ${YELLOW}Uncommitted changes present${RESET}"
+    git status -s
+  else
+    echo -e "  Status:  ${GREEN}Clean${RESET}"
+  fi
+  echo ""
+}
+
+# Command dispatch
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  sync|pull)
+    cmd_sync "$@"
+    ;;
+  push)
+    cmd_push "$@"
+    ;;
+  stow)
+    cmd_stow "$@"
+    ;;
+  rebase-upstream)
+    cmd_rebase_upstream "$@"
+    ;;
+  status)
+    cmd_status "$@"
+    ;;
+  help|-h|--help|"")
+    usage
+    ;;
+  *)
+    log_error "Unknown command: $cmd"
+    echo ""
+    usage
+    exit 1
+    ;;
+esac

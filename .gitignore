@@ -1,3 +1,5 @@
 *.DS_Store
-*.local
 .zshrc.local
+*.local
+!bin/.local/
+!bin/.local/**
