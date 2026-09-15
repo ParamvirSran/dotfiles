@@ -17,9 +17,9 @@ Personal, modular dotfiles managed with [GNU Stow](https://www.gnu.org/software/
 ## 1. Quick Start / Installation
 
 ### Prerequisites
-- **Git** and **GNU Stow** (`sudo apt install git stow` or `sudo pacman -S git stow`)
+- **Git** and **GNU Stow** (`brew install git stow` on macOS; `sudo apt install git stow` on Linux)
 - **Neovim $\ge$ 0.12** (required for upstream `vim.pack` package management)
-- **Tree-sitter CLI** (`cargo install tree-sitter-cli` or `npm install -g tree-sitter-cli`)
+- **Tree-sitter CLI** (`brew install tree-sitter-cli` on macOS; `cargo install tree-sitter-cli` or system package on Linux)
 - **Tmux** ($\ge 3.0$) and **Zsh**
 
 ### One-Command Setup
